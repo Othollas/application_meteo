@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Météo</title>
+</head>
+<body>
+    <h1>Recherchez la météo d'une ville</h1>
+    <form method="POST">
+        <input type="text" name="ville" placeholder="Entrez une ville" required>
+        <button type="submit">Rechercher</button>
+    </form>
+
+    {% if meteo %}
+        {% if "error" in meteo %}
+            <p style="color: red;">{{ meteo.error }}</p>
+        {% else %}
+            <h2>{{ meteo["ville"] }}</h2>
+            <p>{{ meteo["current_weather"] }}</p>
+            <p>{{ meteo["temp"] }}</p>
+            <p>{{ meteo["sunrise_sunset"] }}</p>
+        {% endif %}
+    {% endif %}
+</body>
+</html>

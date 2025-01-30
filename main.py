@@ -18,89 +18,50 @@ with open("city.list.json", "r", encoding="utf-8") as f :
 
 api_key = os.getenv("API_KEY")
 root_url = "http://api.openweathermap.org/data/2.5/weather?"
-latitude = None
-longitude = None
+
 
 
 def get_weather(id_ville) :
-    # param = {
-    #    "units" : "metric",
-    #    "lang" : "fr"
-    # }
-    # url = f"{root_url}&lat={latitude}&lon={longitude}&appid={api_key}"
-    url = f"{root_url}&id={id_ville}&appid={api_key}&units=metric&lang=fr"
-    
-    
-    r = requests.get(url, param)
-    if r.status_code == 200 :
-        response = r.json()
-        for key in response:
-           print(key)
 
+    url = f"{root_url}&id={id_ville}&appid={api_key}&units=metric&lang=fr"
+    response = requests.get(url)
+
+    if response.status_code != 200 :
+        return {"error": "Ville introuvable ou problème avec l'API."}
+    response = response.json()
+  
     # Transformation du timeStamp en H/M/S 
-    data_time = {"sunrise" : response["sys"]['sunrise'], "sunset" : response["sys"]['sunset']} 
-    sunrise_time = datetime.fromtimestamp(data_time["sunrise"])
-    sunset_time = datetime.fromtimestamp(data_time["sunset"])
+    data_time = {"sunrise" : response["sys"]['sunrise'], "sunset" : response["sys"]['sunset']}
+    timezone_offset = response["timezone"]
+    sunrise_time = datetime.fromtimestamp(data_time["sunrise"] + timezone_offset -3600)
+    sunset_time = datetime.fromtimestamp(data_time["sunset"] + timezone_offset - 3600)
 
     # modele pour les données
-    modele = {
+    return {
         "ville" :                       f"Ville : {response["name"]}",
         "current_weather" : f"Le ciel est {response["weather"][0]["description"]}",
         "temp" :            f"La température est de {response["main"]["temp"]}° | Ressentie : {response["main"]["feels_like"]}° | Min : {response["main"]["temp_min"]}° | Max : {response["main"]["temp_max"]}°",
         "sunrise_sunset" :  f"Lever de soleil : {sunrise_time.strftime("%H:%M:%S")} | Coucher de soleil : {sunset_time.strftime("%H:%M:%S")}"
     }
 
-    # Affichage du resultat
-    print(f"""
-        {modele["ville"]}
-        {modele['current_weather']}
-        {modele["temp"]}
-        {modele["sunrise_sunset"]}
-""")    
 
-#     print(f"""
-#     Ville :         {response["name"]}
-#     Température :   {response["weather"]}
-#     timezone :      {response["timezone"]}
-#     base :          {response["base"]}
-#     main :          {response["main"]}
-#     visibility :    {response["visibility"]}
-#     wind :          {response["wind"]}
-#     dt :            {response["dt"]}
-#     sys :           {response["sys"]}
-
-# """)
-
-# Choisir une ville quand les resultats sont multiples.
 def trouver_ville(ville_rechercher) :
   ville_trouver = [item for item in data if item["name"].lower() == ville_rechercher.lower()]
-  index = 1
-  if len(ville_trouver) > 1:
-    for ville in ville_trouver :
-        print(f'{index} : {ville["name"]} |  {ville["country"]}')
-        index += 1
-    choice = input("Entrez le numéro de la ville désiré : ")
-    choice = int(choice)
-    ville_selectionner = ville_trouver[choice-1]
-    return (ville_selectionner["id"])
-  else:
-    return ville_trouver[0]["id"]
   
-# Utilisation du try except pour gerer les errreurs
-def user_input():
-    ville = input('Rechercher une ville. ')
-    try:
-      ville_found = trouver_ville(ville)
-    except:
-      print("An error is occured ")
-      exit()
-    else:
-       return ville_found
-
-# Fonction qui combine les fonction de l'application
-def main():
-    get_weather(user_input())
+  if not ville_trouver:
+    return None
+  return ville_trouver[0]["id"]
 
 
-#lancer le programme
-main()
+def get_weather_data(ville):
+  ville_id = trouver_ville(ville)
+  if ville_id:
+      return get_weather(ville_id)
+  return {"error": f"Ville non trouvée dans la base de données"}
+
+
+#lancer le programme seul ou de l'importer dans Flask
+if __name__ == "__main__":
+  ville = input("Rechercher une ville : ")
+  meteo = get_weather_data(ville)
+  print(meteo)
